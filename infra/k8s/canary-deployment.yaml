@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: app-canary
+  labels:
+    app: checkout
+    track: canary
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: checkout
+      track: canary
+  template:
+    metadata:
+      labels:
+        app: checkout
+        track: canary
+    spec:
+      containers:
+        - name: app
+          image: progressive-delivery-lab/app:v2
+          ports:
+            - containerPort: 8080
+          env:
+            - name: VERSION
+              value: v2
+            - name: ERROR_RATE
+              value: "0"
+            - name: BASE_LATENCY_MS
+              value: "140"
+            - name: FEATURE_FLAG_URL
+              value: http://flag-service:8080

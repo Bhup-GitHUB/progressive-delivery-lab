@@ -1,0 +1,7 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: feature-flags
+data:
+  fraud-model-enabled: "false"
+  fraud-model-rollout-percent: "0"
