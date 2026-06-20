@@ -7,6 +7,7 @@ import (
 	"math"
 	mathrand "math/rand/v2"
 	"net/http"
+	"sync"
 	"time"
 
 	"progressive-delivery-lab/internal/env"
@@ -24,6 +25,13 @@ type server struct {
 	startedAt     time.Time
 	extraLatency  time.Duration
 	fraudErrorPct float64
+	flagCache     flagCache
+}
+
+type flagCache struct {
+	mu        sync.Mutex
+	expiresAt time.Time
+	response  flags.Response
 }
 
 func main() {
@@ -119,11 +127,35 @@ func (s *server) modelEnabled(ctx context.Context, userID string) bool {
 		return false
 	}
 
-	response, err := s.flagClient.Flags(ctx)
+	response, err := s.flags(ctx)
 	if err != nil {
 		return false
 	}
 	return flags.EnabledFor(response.FraudModel, userID)
+}
+
+func (s *server) flags(ctx context.Context) (flags.Response, error) {
+	now := time.Now()
+
+	s.flagCache.mu.Lock()
+	if now.Before(s.flagCache.expiresAt) {
+		response := s.flagCache.response
+		s.flagCache.mu.Unlock()
+		return response, nil
+	}
+	s.flagCache.mu.Unlock()
+
+	response, err := s.flagClient.Flags(ctx)
+	if err != nil {
+		return response, err
+	}
+
+	s.flagCache.mu.Lock()
+	s.flagCache.response = response
+	s.flagCache.expiresAt = now.Add(500 * time.Millisecond)
+	s.flagCache.mu.Unlock()
+
+	return response, nil
 }
 
 func requestKey(r *http.Request) string {
