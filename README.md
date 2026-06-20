@@ -100,7 +100,7 @@ make logs
 Check the router:
 
 ```bash
-curl -s http://localhost:8080/health
+curl -s http://localhost:18080/health
 ```
 
 Check flags:
@@ -214,10 +214,10 @@ Those pieces matter in production. They are intentionally left out here so the c
 ## Useful Endpoints
 
 ```bash
-curl -s http://localhost:8080/metrics
-curl -s http://localhost:8080/checkout
+curl -s http://localhost:18080/metrics
+curl -s http://localhost:18080/checkout
 curl -s http://localhost:8081/flags
-curl -s -X POST http://localhost:8080/rollback
+curl -s -X POST http://localhost:18080/rollback
 curl -s -X POST http://localhost:8081/flags/fraud-model/kill
 ```
 
@@ -232,7 +232,7 @@ curl -s -X POST http://localhost:8081/flags/fraud-model \
 Promote router traffic manually:
 
 ```bash
-curl -s -X POST http://localhost:8080/rollout \
+curl -s -X POST http://localhost:18080/rollout \
   -H 'Content-Type: application/json' \
   -d '{"canaryPercent":25}'
 ```

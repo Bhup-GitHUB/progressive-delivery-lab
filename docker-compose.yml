@@ -55,7 +55,7 @@ services:
       - app-stable
       - app-canary
     ports:
-      - "8080:8080"
+      - "18080:8080"
 
   rollout-controller:
     build:

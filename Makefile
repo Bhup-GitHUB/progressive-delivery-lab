@@ -25,5 +25,5 @@ demo-bad:
 	$(COMPOSE) run --rm loadgen -target http://router:8080 -mode bad -duration 90s -rps 35
 
 rollback:
-	curl -s -X POST http://localhost:8080/rollback
+	curl -s -X POST http://localhost:18080/rollback
 	curl -s -X POST http://localhost:8081/flags/fraud-model/kill
