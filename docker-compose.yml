@@ -1,0 +1,84 @@
+services:
+  flag-service:
+    build:
+      context: .
+      args:
+        SERVICE: flag-service
+    environment:
+      ADDR: :8080
+      FRAUD_MODEL_ENABLED: "0"
+      FRAUD_MODEL_ROLLOUT_PERCENT: "0"
+    ports:
+      - "8081:8080"
+
+  app-stable:
+    build:
+      context: .
+      args:
+        SERVICE: app
+    environment:
+      ADDR: :8080
+      VERSION: v1
+      ERROR_RATE: "0"
+      BASE_LATENCY_MS: "120"
+      FEATURE_FLAG_URL: http://flag-service:8080
+    depends_on:
+      - flag-service
+
+  app-canary:
+    build:
+      context: .
+      args:
+        SERVICE: app
+    environment:
+      ADDR: :8080
+      VERSION: v2
+      ERROR_RATE: ${CANARY_ERROR_RATE:-0}
+      BASE_LATENCY_MS: ${CANARY_BASE_LATENCY_MS:-140}
+      FRAUD_MODEL_LATENCY_MS: ${CANARY_FRAUD_MODEL_LATENCY_MS:-80}
+      FRAUD_MODEL_ERROR_RATE: ${CANARY_FRAUD_MODEL_ERROR_RATE:-0}
+      FEATURE_FLAG_URL: http://flag-service:8080
+    depends_on:
+      - flag-service
+
+  router:
+    build:
+      context: .
+      args:
+        SERVICE: router
+    environment:
+      ADDR: :8080
+      STABLE_URL: http://app-stable:8080
+      CANARY_URL: http://app-canary:8080
+      CANARY_PERCENT: "1"
+    depends_on:
+      - app-stable
+      - app-canary
+    ports:
+      - "8080:8080"
+
+  rollout-controller:
+    build:
+      context: .
+      args:
+        SERVICE: rollout-controller
+    environment:
+      ROUTER_URL: http://router:8080
+      FEATURE_FLAG_URL: http://flag-service:8080
+      CHECK_INTERVAL_SECONDS: "10"
+      MIN_CANARY_REQUESTS: "5"
+    depends_on:
+      - router
+      - flag-service
+
+  loadgen:
+    build:
+      context: .
+      args:
+        SERVICE: loadgen
+    profiles:
+      - tools
+    environment:
+      TARGET: http://router:8080
+    depends_on:
+      - router
